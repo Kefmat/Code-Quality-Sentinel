@@ -1,0 +1,16 @@
+# Java
+*.class
+*.jar
+
+# Node.js
+node_modules/
+npm-debug.log
+
+# Prosjektspesifikt
+quality_report.json
+app/output/*
+!app/output/.gitkeep
+
+# OS filer
+.DS_Store
+Thumbs.db
