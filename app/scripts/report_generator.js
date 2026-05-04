@@ -36,8 +36,14 @@ try {
                .replace('{{DOC_RATE}}', data.doc_rate.toFixed(1))
                .replace('{{TIMESTAMP}}', new Date().toLocaleString());
 
+    // Lagre HTML
     fs.writeFileSync(path.join(outputDir, 'index.html'), html);
-    console.log(`[NODE] Kvalitetsrapport fullført. Karakter: ${grade}`);
+
+    // Kopier CSS-filen til output-mappen
+    const cssOutputPath = path.join(outputDir, 'style.css');
+    fs.copyFileSync(path.join(__dirname, '../templates/style.css'), cssOutputPath);
+
+console.log(`[NODE] Kvalitetsrapport fullført. Karakter: ${grade}`);
 } catch (err) {
     console.error("[NODE] Feil under generering:", err.message);
     process.exit(1);
