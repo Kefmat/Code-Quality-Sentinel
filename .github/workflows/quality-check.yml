@@ -1,0 +1,43 @@
+name: Code Quality Sentinel
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  analyze-and-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Sjekk kildekode
+        uses: actions/checkout@v4
+
+      - name: Sett opp Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Sett opp Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Kompiler og kjør Java-analysator
+        run: |
+          # Simulerer Docker-miljøet ved å opprette /app-strukturen
+          mkdir -p app/output
+          javac app/src/CodeAnalyzer.java
+          # Kjør mot src-mappen
+          java -cp app/src CodeAnalyzer ./app/src
+
+      - name: Generer visuell rapport
+        run: node app/scripts/report_generator.js
+
+      - name: Last opp rapport som artifakt
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-quality-report
+          path: app/output/
