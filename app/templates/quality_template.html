@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Quality Audit</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="audit-card">
+        <div class="grade-circle {{STATUS_CLASS}}">{{GRADE}}</div>
+        
+        <header>
+            <h1>Code Quality Audit</h1>
+            <p class="subtitle">Sentinel Analysis Resultat</p>
+        </header>
+
+        <main class="stat-grid">
+            <div class="stat-item">
+                <span class="stat-label">Dokumentasjon</span>
+                <span class="stat-value">{{DOC_RATE}}%</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">TODOs funnet</span>
+                <span class="stat-value">{{TODOS}}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Filer skannet</span>
+                <span class="stat-value">{{FILES}}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Kodelinjer</span>
+                <span class="stat-value">{{LINES}}</span>
+            </div>
+        </main>
+
+        <footer>
+            <div class="timestamp">Generert: {{TIMESTAMP}}</div>
+        </footer>
+    </div>
+</body>
+</html>
