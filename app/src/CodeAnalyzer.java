@@ -5,28 +5,28 @@ import java.util.regex.*;
 import java.util.stream.Collectors;
 
 /**
- * CodeAnalyzer skanner kildekode for å måle teknisk kvalitet.
- * Den analyserer kompleksitet, navnestandarder og dokumentasjonsgrad per fil.
+ * CodeAnalyzer skanner kildekode for å måle teknisk kvalitet og sikkerhet.
+ * Den analyserer kompleksitet, navnestandarder, dokumentasjon og sårbarheter.
  */
 public class CodeAnalyzer {
 
     private List<FileReport> fileReports = new ArrayList<>();
 
+    // Regex for å oppdage potensielle hardkodede hemmeligheter (API-nøkler, passord)
+    private static final Pattern SECRET_PATTERN = Pattern.compile(
+        ".*\\b(password|secret|passwd|api_key|apikey|token|private_key)\\b\\s*=\\s*\"[^\"]+\".*", 
+        Pattern.CASE_INSENSITIVE
+    );
+
     public static void main(String[] args) {
         CodeAnalyzer analyzer = new CodeAnalyzer();
-        
-        // Bruker første argument som sti hvis det eksisterer, ellers standard ./src
         String scanPath = (args.length > 0) ? args[0] : "./src";
-        
         analyzer.analyze(scanPath);
         analyzer.saveReport();
     }
 
-    /**
-     * Går gjennom alle filer i en mappe rekursivt og starter analyse.
-     */
     public void analyze(String rootPath) {
-        System.out.println("[ANALYZER] Starter teknisk analyse av: " + rootPath);
+        System.out.println("[ANALYZER] Starter teknisk- og sikkerhetsanalyse av: " + rootPath);
         try {
             List<Path> files = Files.walk(Paths.get(rootPath))
                     .filter(Files::isRegularFile)
@@ -41,11 +41,9 @@ public class CodeAnalyzer {
         }
     }
 
-    /**
-     * Analyserer en enkelt fil for kompleksitet, stil og dokumentasjon.
-     */
     private FileReport processFile(Path path) {
         FileReport report = new FileReport(path.getFileName().toString());
+        boolean insideSqlQuery = false;
         
         try (BufferedReader reader = new BufferedReader(new FileReader(path.toFile()))) {
             String line;
@@ -61,19 +59,46 @@ public class CodeAnalyzer {
                     report.todoCount++;
                 }
 
-                // 2. Mål Syklo matisk Kompleksitet
-                // Vi teller kontrollstrukturer (forgreninger i koden)
+                // 2. Syklo matisk Kompleksitet
                 if (trimmed.matches(".*\\b(if|for|while|case|catch|&&|\\|\\|)\\b.*")) {
                     report.complexityScore++;
                 }
 
-                // 3. Sjekk Navnestandard (Klasser bør være PascalCase)
+                // 3. Stil- og navnesjekk
                 if (trimmed.contains("class ")) {
                     Pattern pattern = Pattern.compile("class\\s+([A-Z][a-zA-Z0-9]*)");
                     Matcher matcher = pattern.matcher(trimmed);
                     if (!matcher.find()) {
-                        report.addIssue("Klassenavn følger ikke PascalCase");
+                        report.addIssue("Stil: Klassenavn bør være PascalCase");
                     }
+                }
+
+                // 4. SIKKERHETSSJEKKER
+                
+                // Sjekk A: Hardkodede hemmeligheter
+                if (SECRET_PATTERN.matcher(trimmed).matches() && !trimmed.contains("null")) {
+                    report.addIssue("Sikkerhet: Potensiell hardkodet hemmelighet/passord oppdaget");
+                }
+
+                // Sjekk B: Svak kryptografi eller usikker randomisering
+                if (trimmed.contains("MessageDigest.getInstance(\"MD5\")") || 
+                    trimmed.contains("MessageDigest.getInstance(\"SHA-1\")")) {
+                    report.addIssue("Sikkerhet: Sårbar kryptoalgoritme brukt (MD5/SHA-1)");
+                }
+                if (trimmed.contains("new Random()")) {
+                    report.addIssue("Sikkerhet: Bruk SecureRandom i stedet for Random for sensitive operasjoner");
+                }
+
+                // Sjekk C: Enkel deteksjon av SQL-injeksjon i strengbygging
+                if (trimmed.toLowerCase().contains("select ") || trimmed.toLowerCase().contains("where ")) {
+                    insideSqlQuery = true;
+                }
+                if (insideSqlQuery && trimmed.contains("+") && (trimmed.contains("\"") || trimmed.contains("'"))) {
+                    report.addIssue("Sikkerhet: Potensiell SQL-injeksjon via strengsammensetning");
+                    insideSqlQuery = false; // Nullstill etter varsel for å unngå duplikater på samme spørring
+                }
+                if (trimmed.contains(";")) {
+                    insideSqlQuery = false; // Avslutt spørringskontekst ved semikolon
                 }
             }
         } catch (IOException e) {
@@ -82,9 +107,6 @@ public class CodeAnalyzer {
         return report;
     }
 
-    /**
-     * Lagrer resultatene som en detaljert JSON-fil.
-     */
     public void saveReport() {
         StringBuilder json = new StringBuilder("{\n  \"files\": [\n");
         
@@ -98,7 +120,6 @@ public class CodeAnalyzer {
         }
         json.append("  ]\n}");
 
-        // Lagrer primært til /app for Docker, med fallback til lokal mappe
         writeJsonToFile(json.toString());
     }
 
@@ -107,15 +128,12 @@ public class CodeAnalyzer {
         for (Path p : paths) {
             try {
                 Files.write(p, content.getBytes());
-                System.out.println("[ANALYZER] Rapport lagret: " + p.toAbsolutePath());
+                System.out.println("[ANALYZER] Sikkerhetsrapport lagret: " + p.toAbsolutePath());
                 return;
             } catch (IOException ignored) {}
         }
     }
 
-    /**
-     * Hjelpeklasse for å kapsle inn data per analysert fil.
-     */
     private static class FileReport {
         String fileName;
         int totalLines = 0;
@@ -126,7 +144,11 @@ public class CodeAnalyzer {
 
         FileReport(String fileName) { this.fileName = fileName; }
 
-        void addIssue(String issue) { issues.add(issue); }
+        void addIssue(String issue) { 
+            if (!issues.contains(issue)) { // Unngå identiske feilmeldinger per fil
+                issues.add(issue); 
+            }
+        }
 
         String getIssuesJson() {
             return issues.stream()
