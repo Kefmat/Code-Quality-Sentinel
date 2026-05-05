@@ -1,43 +1,32 @@
-name: Code Quality Sentinel
+name: Code Quality Sentinel CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, master ]
 
 jobs:
   analyze-and-report:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Sjekk kildekode
-        uses: actions/checkout@v4
+    - name: Sjekk ut kildekode
+      uses: actions/checkout@v4
 
-      - name: Sett opp Java 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
+    - name: Bygg og kjør Sentinel-analysatoren (Docker)
+      run: |
+        docker build -t code-quality-sentinel .
+        docker run --name sentinel-run code-quality-sentinel
 
-      - name: Sett opp Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+    - name: Kopier ut den genererte rapporten fra containeren
+      run: |
+        mkdir -p dist
+        docker cp sentinel-run:/app/app/output/. ./dist/
 
-      - name: Kompiler og kjør Java-analysator
-        run: |
-          # Simulerer Docker-miljøet ved å opprette /app-strukturen
-          mkdir -p app/output
-          javac app/src/CodeAnalyzer.java
-          # Kjør mot src-mappen
-          java -cp app/src CodeAnalyzer ./app/src
-
-      - name: Generer visuell rapport
-        run: node app/scripts/report_generator.js
-
-      - name: Last opp rapport som artifakt
-        uses: actions/upload-artifact@v4
-        with:
-          name: code-quality-report
-          path: app/output/
+    - name: Last opp visuell rapport som artifakt
+      uses: actions/upload-artifact@v4
+      with:
+        name: code-quality-report
+        path: ./dist/
+        retention-days: 7
