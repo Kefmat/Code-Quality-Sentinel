@@ -16,7 +16,8 @@ jobs:
 
     - name: Bygg og kjør Sentinel-analysatoren (Docker)
       run: |
-        docker build -t code-quality-sentinel .
+        # Vi bruker -f for å peke på Dockerfilen inni app-mappen, men beholder rotmappen (.) som kontekst
+        docker build -f app/Dockerfile -t code-quality-sentinel .
         # Vi mounter GitHub-arbeidsområdet inn i /source i containeren slik at den har kode å skanne
         docker run --name sentinel-run -v ${{ github.workspace }}:/source code-quality-sentinel
 
