@@ -14,18 +14,15 @@ jobs:
     - name: Sjekk ut kildekode
       uses: actions/checkout@v4
 
-    - name: Bygg og kjør Sentinel-analysatoren (Docker)
-      run: |
-        # Vi bruker -f for å peke på Dockerfilen inni app-mappen, men beholder rotmappen (.) som kontekst
-        docker build -f app/Dockerfile -t code-quality-sentinel .
-        # Vi mounter GitHub-arbeidsområdet inn i /source i containeren slik at den har kode å skanne
-        docker run --name sentinel-run -v ${{ github.workspace }}:/source code-quality-sentinel
+    - name: Bygg Sentinel-analysatoren (Docker)
+      run: docker build -f infrastructure/Dockerfile -t code-quality-sentinel .
+
+    - name: Kjør Sentinel-analysatoren (Docker)
+      run: docker run --name sentinel-run -v ${{ github.workspace }}:/source code-quality-sentinel
 
     - name: Kopier ut den genererte rapporten fra containeren
       run: |
         mkdir -p dist
-        # Siden WORKDIR i Dockerfilen er /app og Node-skriptet lagrer til ../output,
-        # vil filene havne i /app/app/output i containeren. Vi kopierer herfra:
         docker cp sentinel-run:/app/app/output/. ./dist/
 
     - name: Last opp visuell rapport som artifakt
