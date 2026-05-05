@@ -1,23 +1,17 @@
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
+import java.util.regex.*;
 import java.util.stream.Collectors;
 
 /**
- * CodeAnalyzer skanner kildekode for å måle dokumentasjonsgrad og kvalitet.
- * Resultatene lagres som en JSON-fil for videre prosessering i Node.js.
+ * CodeAnalyzer skanner kildekode for å måle teknisk kvalitet.
+ * Den analyserer kompleksitet, navnestandarder og dokumentasjonsgrad per fil.
  */
 public class CodeAnalyzer {
 
-    private int totalFiles = 0;
-    private int totalLines = 0;
-    private int todoCount = 0;
-    private int javadocCount = 0;
+    private List<FileReport> fileReports = new ArrayList<>();
 
-    /**
-     * Hovedmetode som starter analyseprosessen.
-     * Tar imot en sti som argument, eller bruker './src' som standard.
-     */
     public static void main(String[] args) {
         CodeAnalyzer analyzer = new CodeAnalyzer();
         
@@ -29,81 +23,115 @@ public class CodeAnalyzer {
     }
 
     /**
-     * Går gjennom alle filer i en mappe rekursivt og filtrerer for Java-filer.
-     * @param rootPath Stien som skal skannes.
+     * Går gjennom alle filer i en mappe rekursivt og starter analyse.
      */
     public void analyze(String rootPath) {
-        System.out.println("[ANALYZER] Starter skanning av: " + rootPath);
+        System.out.println("[ANALYZER] Starter teknisk analyse av: " + rootPath);
         try {
             List<Path> files = Files.walk(Paths.get(rootPath))
                     .filter(Files::isRegularFile)
                     .filter(p -> p.toString().endsWith(".java"))
                     .collect(Collectors.toList());
 
-            totalFiles = files.size();
-
             for (Path file : files) {
-                processFile(file);
+                fileReports.add(processFile(file));
             }
         } catch (IOException e) {
             System.err.println("[FEIL] Kunne ikke lese mappen: " + e.getMessage());
-            System.exit(1);
         }
     }
 
     /**
-     * Leser en enkelt fil linje for linje for å telle kodelengde, TODOs og Javadoc.
-     * @param path Stien til filen som skal prosesseres.
+     * Analyserer en enkelt fil for kompleksitet, stil og dokumentasjon.
      */
-    private void processFile(Path path) {
+    private FileReport processFile(Path path) {
+        FileReport report = new FileReport(path.getFileName().toString());
+        
         try (BufferedReader reader = new BufferedReader(new FileReader(path.toFile()))) {
             String line;
-
             while ((line = reader.readLine()) != null) {
-                totalLines++;
+                report.totalLines++;
                 String trimmed = line.trim();
 
-                // Identifiserer TODOs og FIXMEs
+                // 1. Dokumentasjon og TODOs
+                if (trimmed.startsWith("/**")) {
+                    report.javadocCount++;
+                }
                 if (trimmed.contains("TODO") || trimmed.contains("FIXME")) {
-                    todoCount++;
+                    report.todoCount++;
                 }
 
-                // Enkel sjekk for Javadoc-start (blokk-kommentarer)
-                if (trimmed.startsWith("/**")) {
-                    javadocCount++;
+                // 2. Mål Syklo matisk Kompleksitet
+                // Vi teller kontrollstrukturer (forgreninger i koden)
+                if (trimmed.matches(".*\\b(if|for|while|case|catch|&&|\\|\\|)\\b.*")) {
+                    report.complexityScore++;
+                }
+
+                // 3. Sjekk Navnestandard (Klasser bør være PascalCase)
+                if (trimmed.contains("class ")) {
+                    Pattern pattern = Pattern.compile("class\\s+([A-Z][a-zA-Z0-9]*)");
+                    Matcher matcher = pattern.matcher(trimmed);
+                    if (!matcher.find()) {
+                        report.addIssue("Klassenavn følger ikke PascalCase");
+                    }
                 }
             }
         } catch (IOException e) {
             System.err.println("[FEIL] Kunne ikke lese fil: " + path);
         }
+        return report;
     }
 
     /**
-     * Lagrer resultatene til en JSON-fil. 
-     * Bruker /app/quality_report.json for Docker-kompatibilitet.
+     * Lagrer resultatene som en detaljert JSON-fil.
      */
     public void saveReport() {
-        double docRate = totalFiles > 0 ? (double) javadocCount / totalFiles * 100 : 0;
+        StringBuilder json = new StringBuilder("{\n  \"files\": [\n");
         
-        String json = String.format(
-            "{\n  \"total_files\": %d,\n  \"total_lines\": %d,\n  \"todo_count\": %d,\n  \"doc_rate\": %.2f\n}",
-            totalFiles, totalLines, todoCount, docRate
-        );
+        for (int i = 0; i < fileReports.size(); i++) {
+            FileReport fr = fileReports.get(i);
+            json.append(String.format(
+                "    {\n      \"name\": \"%s\",\n      \"lines\": %d,\n      \"complexity\": %d,\n      \"javadoc\": %d,\n      \"todos\": %d,\n      \"issues\": %s\n    }%s\n",
+                fr.fileName, fr.totalLines, fr.complexityScore, fr.javadocCount, fr.todoCount, fr.getIssuesJson(),
+                (i < fileReports.size() - 1 ? "," : "")
+            ));
+        }
+        json.append("  ]\n}");
 
-        // Vi prøver først den absolutte stien for Docker, ellers lokal mappe
-        Path reportPath = Paths.get("/app/quality_report.json");
-        
-        try {
-            Files.write(reportPath, json.getBytes());
-            System.out.println("[ANALYZER] Rapport generert: " + reportPath.toAbsolutePath());
-        } catch (IOException e) {
-            // Fallback for lokal testing utenfor Docker
+        // Lagrer primært til /app for Docker, med fallback til lokal mappe
+        writeJsonToFile(json.toString());
+    }
+
+    private void writeJsonToFile(String content) {
+        Path[] paths = { Paths.get("/app/quality_report.json"), Paths.get("quality_report.json") };
+        for (Path p : paths) {
             try {
-                Files.write(Paths.get("quality_report.json"), json.getBytes());
-                System.out.println("[ANALYZER] Lokal rapport generert (fallback): quality_report.json");
-            } catch (IOException ex) {
-                System.err.println("[FEIL] Kunne ikke lagre rapport: " + ex.getMessage());
-            }
+                Files.write(p, content.getBytes());
+                System.out.println("[ANALYZER] Rapport lagret: " + p.toAbsolutePath());
+                return;
+            } catch (IOException ignored) {}
+        }
+    }
+
+    /**
+     * Hjelpeklasse for å kapsle inn data per analysert fil.
+     */
+    private static class FileReport {
+        String fileName;
+        int totalLines = 0;
+        int javadocCount = 0;
+        int todoCount = 0;
+        int complexityScore = 1; 
+        List<String> issues = new ArrayList<>();
+
+        FileReport(String fileName) { this.fileName = fileName; }
+
+        void addIssue(String issue) { issues.add(issue); }
+
+        String getIssuesJson() {
+            return issues.stream()
+                    .map(s -> "\"" + s + "\"")
+                    .collect(Collectors.joining(", ", "[", "]"));
         }
     }
 }
