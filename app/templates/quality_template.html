@@ -21,6 +21,10 @@
                 <span class="stat-value">{{DOC_RATE}}%</span>
             </div>
             <div class="stat-item">
+                <span class="stat-label">Snitt Kompleksitet</span>
+                <span class="stat-value">{{COMPLEXITY}}</span>
+            </div>
+            <div class="stat-item">
                 <span class="stat-label">TODOs funnet</span>
                 <span class="stat-value">{{TODOS}}</span>
             </div>
@@ -33,6 +37,25 @@
                 <span class="stat-value">{{LINES}}</span>
             </div>
         </main>
+
+        <!-- seksjon for detaljert filoversikt -->
+        <section class="file-details">
+            <h2>Detaljer per fil</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Filnavn</th>
+                        <th>Linjer</th>
+                        <th>Kompleksitet</th>
+                        <th>TODOs</th>
+                        <th>Status / Issues</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{FILE_TABLE}}
+                </tbody>
+            </table>
+        </section>
 
         <footer>
             <div class="timestamp">Generert: {{TIMESTAMP}}</div>
