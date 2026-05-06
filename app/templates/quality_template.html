@@ -48,6 +48,21 @@
 
         <section class="file-details">
             <h2>Detaljer per fil</h2>
+            
+            <div class="table-controls">
+                <input 
+                    type="text" 
+                    id="tableSearch" 
+                    placeholder="Søk etter filnavn..."
+                >
+                <select id="tableFilter">
+                    <option value="all">Vis alle filer</option>
+                    <option value="issues">Bare filer med feil (Issues)</option>
+                    <option value="complex">Høy kompleksitet (>= 5)</option>
+                    <option value="clean">Feilfrie filer (OK)</option>
+                </select>
+            </div>
+
             <table>
                 <thead>
                     <tr>
