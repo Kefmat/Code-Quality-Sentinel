@@ -8,14 +8,42 @@ const dataPath = fs.existsSync('/app/quality_report.json')
 
 const outputDir = path.join(__dirname, '../output');
 const templatePath = path.join(__dirname, '../templates/quality_template.html');
+const historyDir = path.join(__dirname, '../history');
 
 if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
 }
 
+/**
+ * Arkiverer den gjeldende analysen i en historikk-mappe med tidsstempel.
+ * @param {Object} reportData Dataen som skal lagres.
+ */
+function archiveReport(reportData) {
+    try {
+        if (!fs.existsSync(historyDir)) {
+            fs.mkdirSync(historyDir, { recursive: true });
+        }
+
+        const now = new Date();
+        const timestamp = now.toISOString()
+            .replace(/T/, '_')
+            .replace(/\..+/, '')
+            .replace(/:/g, '-');
+
+        const archivePath = path.join(historyDir, `report_${timestamp}.json`);
+        fs.writeFileSync(archivePath, JSON.stringify(reportData, null, 2));
+        console.log(`[GENERATOR] Historisk rapport arkivert: ${archivePath}`);
+    } catch (error) {
+        console.error(`[FEIL] Kunne ikke arkivere rapport: ${error.message}`);
+    }
+}
+
 try {
     const rawData = fs.readFileSync(dataPath, 'utf8');
     const data = JSON.parse(rawData);
+
+    // Steg 1: Arkiver gjeldende rådata
+    archiveReport(data);
 
     // Beregn aggregerte verdier fra den nye "files"-listen
     const totalFiles = data.files.length;
