@@ -1,4 +1,20 @@
-/* Layout og bakgrunn */
+/**
+ * * Seksjoner:
+ * 1. Globalt oppsett og variabler
+ * 2. Hovedbeholdere (Containers)
+ * 3. Typografi og karakter-badge
+ * 4. Statistikk-rutenett (Grid)
+ * 5. Graf-komponenter (Trend)
+ * 6. Interaktive kontroller (Søk/Filter)
+ * 7. Datatabeller
+ * 8. Sidebunn (Footer)
+ * * @author Kefmat
+ * @version 1.1.0
+ */
+
+/* ==========================================================================
+   1. Globalt oppsett og variabler
+   ========================================================================== */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #0f172a;
@@ -8,22 +24,48 @@ body {
     align-items: center;
     min-height: 100vh;
     margin: 0;
-    padding: 20px; /* Padding for scrolling på små skjermer */
+    padding: 20px; /* Sikrer scroll-rom på små skjermer */
 }
 
-/* Hovedkortet */
+/* ==========================================================================
+   2. Hovedbeholdere (Containers)
+   ========================================================================== */
+
+/**
+ * Hovedkortet for dashboardet.
+ * Inneholder alle statistikker, trendgrafer og den interaktive filtabellen.
+ */
 .audit-card {
     background-color: #1e293b;
     padding: 3rem;
     border-radius: 16px;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
     width: 100%;
-    max-width: 800px; /* Økt fra 450px for å romme tabellen */
+    max-width: 800px; /* Tilpasset bredde for å gi god plass til tabell og graf */
     text-align: center;
     border: 1px solid #334155;
+    box-sizing: border-box;
 }
 
-/* Karakter-sirkel */
+/* ==========================================================================
+   3. Typografi og karakter-badge
+   ========================================================================== */
+h1 {
+    font-size: 1.6rem;
+    margin: 0;
+    color: #f8fafc;
+}
+
+.subtitle {
+    font-size: 0.9rem;
+    color: #94a3b8;
+    margin-bottom: 30px;
+}
+
+/**
+ * Rund sirkel som viser den overordnede kodekvalitetskarakteren.
+ * Har en glidende forstørrelseseffekt (zoom) når man holder musepekeren over.
+ */
 .grade-circle {
     width: 110px;
     height: 110px;
@@ -42,25 +84,20 @@ body {
     transform: scale(1.05);
 }
 
-/* Status-farger */
+/* Statusfarger som reflekterer prosjektets tilstand basert på grenseverdier */
 .success { color: #10b981; border-color: #10b981; }
 .warning { color: #f59e0b; border-color: #f59e0b; }
-.danger { color: #ef4444; border-color: #ef4444; }
+.danger  { color: #ef4444; border-color: #ef4444; }
 
-/* Tekst-styling */
-h1 {
-    font-size: 1.6rem;
-    margin: 0;
-    color: #f8fafc;
-}
 
-.subtitle {
-    font-size: 0.9rem;
-    color: #94a3b8;
-    margin-bottom: 30px;
-}
+/* ==========================================================================
+   4. Statistikk-rutenett (Grid)
+   ========================================================================== */
 
-/* Stat-rutenett */
+/**
+ * Adaptivt rutenett som viser overordnede nøkkeltall for repositoriet.
+ * Tilpasser seg automatisk færre kolonner på mindre skjermer.
+ */
 .stat-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -96,8 +133,42 @@ h1 {
     color: #f1f5f9;
 }
 
-/* --- SEKSJON FOR FILTABELL --- */
 
+/* ==========================================================================
+   5. Graf-komponenter (Trend)
+   ========================================================================== */
+
+/**
+ * Seksjonsinnpakning for Chart.js-grafen.
+ * Sikrer en stabil høyde og forhindrer at layouten forskyver seg under rendering.
+ */
+.trend-section {
+    margin-top: 30px;
+    margin-bottom: 30px;
+    text-align: left;
+}
+
+.trend-section h2 {
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+    color: #cbd5e1;
+}
+
+.chart-container {
+    position: relative;
+    height: 260px;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-sizing: border-box;
+}
+
+
+/* ==========================================================================
+   6. Interaktive kontroller (Søk/Filter)
+   ========================================================================== */
 .file-details {
     margin-top: 20px;
     text-align: left;
@@ -111,7 +182,10 @@ h1 {
     color: #cbd5e1;
 }
 
-/* Kontroller for søk og filtrering */
+/**
+ * Layout-rad for søkefeltet og nedtrekksmenyen.
+ * Bruker flexbox for å bryte pent over flere linjer på smale skjermer.
+ */
 .table-controls {
     display: flex;
     gap: 15px;
@@ -129,6 +203,7 @@ h1 {
     font-size: 0.85rem;
     outline: none;
     transition: border-color 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
 }
 
 .table-controls input {
@@ -152,8 +227,18 @@ h1 {
     color: #f1f5f9;
 }
 
+
+/* ==========================================================================
+   7. Datatabeller
+   ========================================================================== */
+
+/**
+ * Tabellinnpakning som muliggjør horisontal rulling.
+ * Forhindrer at brede tabeller skyver hovedkortet ut av skjermkanten på mobil.
+ */
 .table-wrapper {
     overflow-x: auto; /* Sikrer at tabellen kan svaipes på mobil */
+    border-radius: 8px;
 }
 
 table {
@@ -182,7 +267,10 @@ tr:hover td {
     background-color: rgba(71, 85, 105, 0.2);
 }
 
-/* Footer */
+
+/* ==========================================================================
+   8. Sidebunn (Footer)
+   ========================================================================== */
 .timestamp {
     font-size: 0.75rem;
     color: #64748b;

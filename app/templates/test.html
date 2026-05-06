@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Quality Audit</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="audit-card">
+        <div class="grade-circle {{STATUS_CLASS}}">{{GRADE}}</div>
+        
+        <header>
+            <h1>Code Quality Audit</h1>
+            <p class="subtitle">Sentinel Analysis Resultat</p>
+        </header>
+
+        <main class="stat-grid">
+            <div class="stat-item">
+                <span class="stat-label">Dokumentasjon</span>
+                <span class="stat-value">{{DOC_RATE}}%</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Snitt Kompleksitet</span>
+                <span class="stat-value">{{COMPLEXITY}}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">TODOs funnet</span>
+                <span class="stat-value">{{TODOS}}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Filer skannet</span>
+                <span class="stat-value">{{FILES}}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Kodelinjer</span>
+                <span class="stat-value">{{LINES}}</span>
+            </div>
+        </main>
+
+        <section class="trend-section" style="margin-top: 30px; margin-bottom: 30px;">
+            <h2>Historisk Utvikling</h2>
+            <div class="chart-container" style="position: relative; height: 260px; width: 100%; background: rgba(255, 255, 255, 0.03); padding: 15px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08);">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </section>
+
+        <section class="file-details">
+            <h2>Detaljer per fil</h2>
+            
+            <div class="table-controls">
+                <input 
+                    type="text" 
+                    id="tableSearch" 
+                    placeholder="Søk etter filnavn..."
+                >
+                <select id="tableFilter">
+                    <option value="all">Vis alle filer</option>
+                    <option value="issues">Bare filer med feil (Issues)</option>
+                    <option value="complex">Høy kompleksitet (>= 5)</option>
+                    <option value="clean">Feilfrie filer (OK)</option>
+                </select>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Filnavn</th>
+                        <th>Linjer</th>
+                        <th>Kompleksitet</th>
+                        <th>TODOs</th>
+                        <th>Status / Issues</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{FILE_TABLE}}
+                </tbody>
+            </table>
+        </section>
+
+        <footer>
+            <div class="timestamp">Generert: {{TIMESTAMP}}</div>
+        </footer>
+    </div>
+
+    <script>
+        // Pakker plassholderen inn i en streng for å unngå syntaksfeil i IDE-en,
+        // og parser den deretter som et JSON-objekt i nettleseren.
+        const rawTrendData = '{{TREND_DATA}}';
+        let trendData = [];
+
+        try {
+            if (rawTrendData && rawTrendData !== '{{' + 'TREND_DATA' + '}}') {
+                trendData = JSON.parse(rawTrendData);
+            }
+        } catch (e) {
+            console.warn("[SENTINEL] Kunne ikke parse historiske data:", e);
+        }
+
+        if (trendData && trendData.length > 0) {
+            const labels = trendData.map(d => d.label);
+            const complexityData = trendData.map(d => d.complexity);
+            const docRateData = trendData.map(d => d.docRate);
+
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Snitt Kompleksitet',
+                            data: complexityData,
+                            borderColor: '#ff922b',
+                            backgroundColor: 'rgba(255, 146, 43, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Dokumentasjon (%)',
+                            data: docRateData,
+                            borderColor: '#51cf66',
+                            backgroundColor: 'rgba(81, 207, 102, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#ced4da'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            },
+                            ticks: {
+                                color: '#adb5bd'
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Kompleksitet',
+                                color: '#ff922b'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            },
+                            ticks: {
+                                color: '#adb5bd'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Dokumentasjon (%)',
+                                color: '#51cf66'
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            },
+                            ticks: {
+                                color: '#adb5bd',
+                                max: 100,
+                                min: 0
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // DOM-filtrering for filtabellen
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('tableSearch');
+            const filterSelect = document.getElementById('tableFilter');
+            const tableRows = document.querySelectorAll('.file-details tbody tr');
+
+            function filterTable() {
+                const query = searchInput.value.toLowerCase().trim();
+                const filterValue = filterSelect.value;
+
+                tableRows.forEach(row => {
+                    const cells = row.getElementsByTagName('td');
+                    if (cells.length < 5) return;
+
+                    const fileName = cells[0].textContent.toLowerCase();
+                    const complexity = parseInt(cells[2].textContent, 10) || 0;
+                    const statusText = cells[4].textContent.trim();
+
+                    const matchesSearch = fileName.includes(query);
+                    let matchesFilter = true;
+
+                    if (filterValue === 'issues') {
+                        matchesFilter = statusText !== 'OK';
+                    } else if (filterValue === 'complex') {
+                        matchesFilter = complexity >= 5;
+                    } else if (filterValue === 'clean') {
+                        matchesFilter = statusText === 'OK';
+                    }
+
+                    if (matchesSearch && matchesFilter) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+
+            if (searchInput && filterSelect) {
+                searchInput.addEventListener('input', filterTable);
+                filterSelect.addEventListener('change', filterTable);
+            }
+        });
+    </script>
+</body>
+</html>
