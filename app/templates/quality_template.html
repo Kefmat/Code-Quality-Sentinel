@@ -186,6 +186,49 @@
                 }
             });
         }
+
+        // DOM-filtrering for filtabellen
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('tableSearch');
+            const filterSelect = document.getElementById('tableFilter');
+            const tableRows = document.querySelectorAll('.file-details tbody tr');
+
+            function filterTable() {
+                const query = searchInput.value.toLowerCase().trim();
+                const filterValue = filterSelect.value;
+
+                tableRows.forEach(row => {
+                    const cells = row.getElementsByTagName('td');
+                    if (cells.length < 5) return;
+
+                    const fileName = cells[0].textContent.toLowerCase();
+                    const complexity = parseInt(cells[2].textContent, 10) || 0;
+                    const statusText = cells[4].textContent.trim();
+
+                    const matchesSearch = fileName.includes(query);
+                    let matchesFilter = true;
+
+                    if (filterValue === 'issues') {
+                        matchesFilter = statusText !== 'OK';
+                    } else if (filterValue === 'complex') {
+                        matchesFilter = complexity >= 5;
+                    } else if (filterValue === 'clean') {
+                        matchesFilter = statusText === 'OK';
+                    }
+
+                    if (matchesSearch && matchesFilter) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+
+            if (searchInput && filterSelect) {
+                searchInput.addEventListener('input', filterTable);
+                filterSelect.addEventListener('change', filterTable);
+            }
+        });
     </script>
 </body>
 </html>
