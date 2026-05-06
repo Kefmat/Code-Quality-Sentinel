@@ -111,6 +111,47 @@ h1 {
     color: #cbd5e1;
 }
 
+/* Kontroller for søk og filtrering */
+.table-controls {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.table-controls input,
+.table-controls select {
+    padding: 10px 15px;
+    background-color: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    color: #f1f5f9;
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.table-controls input {
+    flex: 1;
+    min-width: 200px;
+}
+
+.table-controls select {
+    min-width: 180px;
+    cursor: pointer;
+}
+
+.table-controls input:focus,
+.table-controls select:focus {
+    border-color: #475569;
+    box-shadow: 0 0 0 2px rgba(71, 85, 105, 0.2);
+}
+
+.table-controls select option {
+    background-color: #0f172a;
+    color: #f1f5f9;
+}
+
 .table-wrapper {
     overflow-x: auto; /* Sikrer at tabellen kan svaipes på mobil */
 }
