@@ -38,6 +38,52 @@ function archiveReport(reportData) {
     }
 }
 
+/**
+ * Henter og sorterer de siste rapportene for å generere historisk trend.
+ * @returns {Array} Liste med historiske datapunkter til grafen.
+ */
+function getHistoricalData() {
+    try {
+        if (!fs.existsSync(historyDir)) {
+            return [];
+        }
+
+        const files = fs.readdirSync(historyDir)
+            .filter(f => f.startsWith('report_') && f.endsWith('.json'))
+            .sort(); // Sorterer kronologisk etter tidsstempel i filnavnet
+
+        // Hent de siste 7 rapportene for å unngå en overfylt graf
+        const recentFiles = files.slice(-7);
+
+        return recentFiles.map(file => {
+            const filePath = path.join(historyDir, file);
+            const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+            
+            // Hent ut tidsstempel fra filnavnet (f.eks. "2026-05-06_08-27") til x-aksen
+            const dateMatch = file.match(/report_(\d{4}-\d{2}-\d{2})_(\d{2}-\d{2})/);
+            const label = dateMatch ? `${dateMatch[1]} ${dateMatch[2].replace('-', ':')}` : 'Ukjent';
+
+            const totalFiles = content.files.length;
+            const totalLines = content.files.reduce((sum, f) => sum + f.lines, 0);
+            const totalJavadoc = content.files.reduce((sum, f) => sum + f.javadoc, 0);
+            const docRate = totalFiles > 0 ? (totalJavadoc / totalFiles) * 100 : 0;
+            const avgComplexity = totalFiles > 0 
+                ? (content.files.reduce((sum, f) => sum + f.complexity, 0) / totalFiles) 
+                : 0;
+
+            return {
+                label,
+                lines: totalLines,
+                docRate: parseFloat(docRate.toFixed(1)),
+                complexity: parseFloat(avgComplexity.toFixed(1))
+            };
+        });
+    } catch (error) {
+        console.error(`[FEIL] Kunne ikke hente historiske data: ${error.message}`);
+        return [];
+    }
+}
+
 try {
     const rawData = fs.readFileSync(dataPath, 'utf8');
     const data = JSON.parse(rawData);
@@ -84,6 +130,9 @@ try {
         </tr>
     `).join('');
 
+    // Steg 2: Hent all historikk for å fôre trendgrafen
+    const trendData = getHistoricalData();
+
     // Les malen og erstatt variabler
     let html = fs.readFileSync(templatePath, 'utf8');
     html = html.replace(/{{GRADE}}/g, grade)
@@ -94,6 +143,7 @@ try {
                .replace(/{{COMPLEXITY}}/g, avgComplexity.toFixed(1))
                .replace(/{{DOC_RATE}}/g, docRate.toFixed(1))
                .replace(/{{FILE_TABLE}}/g, fileTableRows)
+               .replace(/{{TREND_DATA}}/g, JSON.stringify(trendData)) // Sende historikk direkte inn i frontend-skriptet
                .replace(/{{TIMESTAMP}}/g, new Date().toLocaleString());
 
     // Lagre ferdig HTML
