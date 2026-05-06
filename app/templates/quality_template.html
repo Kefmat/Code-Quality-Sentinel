@@ -70,7 +70,18 @@
     </div>
 
     <script>
-        const trendData = {{TREND_DATA}};
+        // Pakker plassholderen inn i en streng for å unngå syntaksfeil i IDE-en,
+        // og parser den deretter som et JSON-objekt i nettleseren.
+        const rawTrendData = '{{TREND_DATA}}';
+        let trendData = [];
+
+        try {
+            if (rawTrendData && rawTrendData !== '{{' + 'TREND_DATA' + '}}') {
+                trendData = JSON.parse(rawTrendData);
+            }
+        } catch (e) {
+            console.warn("[SENTINEL] Kunne ikke parse historiske data:", e);
+        }
 
         if (trendData && trendData.length > 0) {
             const labels = trendData.map(d => d.label);
