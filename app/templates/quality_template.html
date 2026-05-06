@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Code Quality Audit</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="audit-card">
@@ -38,7 +39,13 @@
             </div>
         </main>
 
-        <!-- seksjon for detaljert filoversikt -->
+        <section class="trend-section" style="margin-top: 30px; margin-bottom: 30px;">
+            <h2>Historisk Utvikling</h2>
+            <div class="chart-container" style="position: relative; height: 260px; width: 100%; background: rgba(255, 255, 255, 0.03); padding: 15px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08);">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </section>
+
         <section class="file-details">
             <h2>Detaljer per fil</h2>
             <table>
