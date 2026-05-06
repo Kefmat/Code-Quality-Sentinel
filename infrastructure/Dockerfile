@@ -19,7 +19,7 @@ COPY ./app/templates ./templates
 # Opprett mapper for skanning og resultat.
 # Vi oppretter både /app/output og /app/app/output for å være 100% sikre på 
 # at Node-skriptets relative baner (../output) treffer en eksisterende mappe.
-RUN mkdir -p /source /app/output /app/app/output
+RUN mkdir -p /source /app/output /app/app/output /app/app/history
 
 # Kjør mot /source mappen
 CMD ["sh", "-c", "java -cp src CodeAnalyzer /source && node scripts/report_generator.js"]
