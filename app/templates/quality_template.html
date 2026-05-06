@@ -68,5 +68,98 @@
             <div class="timestamp">Generert: {{TIMESTAMP}}</div>
         </footer>
     </div>
+
+    <script>
+        const trendData = {{TREND_DATA}};
+
+        if (trendData && trendData.length > 0) {
+            const labels = trendData.map(d => d.label);
+            const complexityData = trendData.map(d => d.complexity);
+            const docRateData = trendData.map(d => d.docRate);
+
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Snitt Kompleksitet',
+                            data: complexityData,
+                            borderColor: '#ff922b',
+                            backgroundColor: 'rgba(255, 146, 43, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Dokumentasjon (%)',
+                            data: docRateData,
+                            borderColor: '#51cf66',
+                            backgroundColor: 'rgba(81, 207, 102, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#ced4da'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            },
+                            ticks: {
+                                color: '#adb5bd'
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Kompleksitet',
+                                color: '#ff922b'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            },
+                            ticks: {
+                                color: '#adb5bd'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Dokumentasjon (%)',
+                                color: '#51cf66'
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            },
+                            ticks: {
+                                color: '#adb5bd',
+                                max: 100,
+                                min: 0
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
 </body>
 </html>
