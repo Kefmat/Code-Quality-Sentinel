@@ -39,9 +39,9 @@
             </div>
         </main>
 
-        <section class="trend-section" style="margin-top: 30px; margin-bottom: 30px;">
+        <section class="trend-section">
             <h2>Historisk Utvikling</h2>
-            <div class="chart-container" style="position: relative; height: 260px; width: 100%; background: rgba(255, 255, 255, 0.03); padding: 15px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08);">
+            <div class="chart-container">
                 <canvas id="trendChart"></canvas>
             </div>
         </section>
@@ -63,20 +63,22 @@
                 </select>
             </div>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>Filnavn</th>
-                        <th>Linjer</th>
-                        <th>Kompleksitet</th>
-                        <th>TODOs</th>
-                        <th>Status / Issues</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {{FILE_TABLE}}
-                </tbody>
-            </table>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Filnavn</th>
+                            <th>Linjer</th>
+                            <th>Kompleksitet</th>
+                            <th>TODOs</th>
+                            <th>Status / Issues</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{FILE_TABLE}}
+                    </tbody>
+                </table>
+            </div>
         </section>
 
         <footer>
@@ -85,12 +87,17 @@
     </div>
 
     <script>
-        // Pakker plassholderen inn i en streng for å unngå syntaksfeil i IDE-en,
-        // og parser den deretter som et JSON-objekt i nettleseren.
+        /**
+         * Parsing og initialisering av trenddata.
+         * * Denne blokken henter JSON-data fra mal-plassholderen og
+         * genererer et to-akset linjediagram ved bruk av Chart.js.
+         * * @author Kefmat
+         */
         const rawTrendData = '{{TREND_DATA}}';
         let trendData = [];
 
         try {
+            // Unngå syntaksfeil i IDE dersom plassholderen ikke er erstattet ennå
             if (rawTrendData && rawTrendData !== '{{' + 'TREND_DATA' + '}}') {
                 trendData = JSON.parse(rawTrendData);
             }
@@ -98,6 +105,7 @@
             console.warn("[SENTINEL] Kunne ikke parse historiske data:", e);
         }
 
+        // Tegn opp grafen dersom det finnes historiske data tilgjengelig
         if (trendData && trendData.length > 0) {
             const labels = trendData.map(d => d.label);
             const complexityData = trendData.map(d => d.complexity);
@@ -187,12 +195,20 @@
             });
         }
 
-        // DOM-filtrering for filtabellen
+        /**
+         * Sanntids DOM-filtrering for filtabellen.
+         * * Kobler seg på input- og endringshendelser for å umiddelbart filtrere
+         * rader i tabellen basert på filnavn og valgt statusmetrikk.
+         * * @author Kefmat
+         */
         document.addEventListener('DOMContentLoaded', () => {
             const searchInput = document.getElementById('tableSearch');
             const filterSelect = document.getElementById('tableFilter');
             const tableRows = document.querySelectorAll('.file-details tbody tr');
 
+            /**
+             * Utfører den faktiske filtreringen av tabellradene basert på søkeord og filtertype.
+             */
             function filterTable() {
                 const query = searchInput.value.toLowerCase().trim();
                 const filterValue = filterSelect.value;
@@ -208,6 +224,7 @@
                     const matchesSearch = fileName.includes(query);
                     let matchesFilter = true;
 
+                    // Logikk for filtervalg
                     if (filterValue === 'issues') {
                         matchesFilter = statusText !== 'OK';
                     } else if (filterValue === 'complex') {
@@ -216,6 +233,7 @@
                         matchesFilter = statusText === 'OK';
                     }
 
+                    // Vis eller skjul raden basert på treff
                     if (matchesSearch && matchesFilter) {
                         row.style.display = '';
                     } else {
@@ -224,6 +242,7 @@
                 });
             }
 
+            // Registrer lyttere for interaksjon
             if (searchInput && filterSelect) {
                 searchInput.addEventListener('input', filterTable);
                 filterSelect.addEventListener('change', filterTable);
