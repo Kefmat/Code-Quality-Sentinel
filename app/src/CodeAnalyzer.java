@@ -7,6 +7,8 @@ import java.util.stream.Collectors;
 /**
  * CodeAnalyzer skanner kildekode for å måle dokumentasjonsgrad og kvalitet.
  * Resultatene lagres som en JSON-fil for videre prosessering i Node.js.
+ * * @author Kefmat
+ * @version 1.2.1
  */
 public class CodeAnalyzer {
 
@@ -24,13 +26,23 @@ public class CodeAnalyzer {
 
     /**
      * Hovedmetode som starter analyseprosessen.
-     * Tar imot en sti som argument, eller bruker './src' som standard.
+     * Sjekker automatisk for vanlige prosjektstrukturer.
+     * * @param args Kommandolinjeargumenter (valgfri sti til kildekode).
      */
     public static void main(String[] args) {
         CodeAnalyzer analyzer = new CodeAnalyzer();
         
-        // Bruker første argument som sti hvis det eksisterer, ellers standard ./src
-        String scanPath = (args.length > 0) ? args[0] : "./src";
+        // Prioritering av sti: 
+        // 1. Argument fra terminal
+        // 2. ./app/src (Standard for din VS Code-struktur)
+        // 3. ./src (Standard fallback)
+        String scanPath = "./src";
+        
+        if (args.length > 0) {
+            scanPath = args[0];
+        } else if (Files.exists(Paths.get("./app/src"))) {
+            scanPath = "./app/src";
+        }
         
         analyzer.analyze(scanPath);
         analyzer.saveReport();
@@ -38,30 +50,41 @@ public class CodeAnalyzer {
 
     /**
      * Går gjennom alle filer i en mappe rekursivt og filtrerer for Java-filer.
-     * @param rootPath Stien som skal skannes.
+     * * @param rootPath Stien som skal skannes.
      */
     public void analyze(String rootPath) {
-        System.out.println("[ANALYZER] Starter skanning av: " + rootPath);
+        Path startPath = Paths.get(rootPath);
+        
+        if (!Files.exists(startPath)) {
+            System.err.println("[FEIL] Kunne ikke finne mappen: " + startPath.toAbsolutePath());
+            System.err.println("[TIPS] Sørg for at du står i prosjektrot eller oppgi sti som argument.");
+            System.exit(1);
+        }
+
+        System.out.println("[ANALYZER] Starter skanning av: " + startPath.toAbsolutePath());
+        
         try {
-            List<Path> files = Files.walk(Paths.get(rootPath))
+            List<Path> files = Files.walk(startPath)
                     .filter(Files::isRegularFile)
                     .filter(p -> p.toString().endsWith(".java"))
                     .collect(Collectors.toList());
 
             totalFiles = files.size();
+            System.out.println("[ANALYZER] Fant " + totalFiles + " Java-filer.");
 
             for (Path file : files) {
                 processFile(file);
             }
         } catch (IOException e) {
-            System.err.println("[FEIL] Kunne ikke lese mappen: " + e.getMessage());
+            System.err.println("[FEIL] Feil under gjennomgang av filer: " + e.getMessage());
             System.exit(1);
         }
     }
 
     /**
      * Leser en enkelt fil linje for linje for å telle kodelengde, TODOs og Javadoc.
-     * @param path Stien til filen som skal prosesseres.
+     * Inneholder også logikk for å identifisere sikkerhetshull og stilfeil.
+     * * @param path Stien til filen som skal prosesseres.
      */
     private void processFile(Path path) {
         FileReport report = new FileReport(path.getFileName().toString());
@@ -75,24 +98,24 @@ public class CodeAnalyzer {
                 report.lines++;
                 String trimmed = line.trim();
 
-                // Identifiserer TODOs og FIXMEs
+                // 1. Identifiserer TODOs og FIXMEs
                 if (trimmed.contains("TODO") || trimmed.contains("FIXME")) {
                     todoCount++;
                     report.todos++;
                 }
 
-                // Enkel sjekk for Javadoc-start (blokk-kommentarer)
+                // 2. Enkel sjekk for Javadoc-start
                 if (trimmed.startsWith("/**")) {
                     javadocCount++;
                     report.javadoc++;
                 }
 
-                // Måling av syklomatisk kompleksitet
+                // 3. Måling av syklomatisk kompleksitet (forenklet)
                 if (trimmed.matches(".*\\b(if|for|while|case|catch|&&|\\|\\|)\\b.*")) {
                     report.complexity++;
                 }
 
-                // Sjekk av navnestandard (Klasser bør starte med stor bokstav)
+                // 4. Sjekk av navnestandard
                 if (trimmed.contains("class ")) {
                     Pattern pattern = Pattern.compile("class\\s+([A-Z][a-zA-Z0-9]*)");
                     Matcher matcher = pattern.matcher(trimmed);
@@ -101,21 +124,21 @@ public class CodeAnalyzer {
                     }
                 }
 
-                // Sikkerhetssjekk A: Hardkodede hemmeligheter og passord
+                // 5. Sikkerhet: Hardkodede hemmeligheter
                 if (SECRET_PATTERN.matcher(trimmed).matches() && !trimmed.contains("null")) {
                     report.addIssue("Sikkerhet: Potensiell hardkodet hemmelighet oppdaget");
                 }
 
-                // Sikkerhetssjekk B: Svake kryptoalgoritmer eller usikker randomisering
+                // 6. Sikkerhet: Svake kryptoalgoritmer
                 if (trimmed.contains("MessageDigest.getInstance(\"MD5\")") || 
                     trimmed.contains("MessageDigest.getInstance(\"SHA-1\")")) {
                     report.addIssue("Sikkerhet: Sårbar kryptoalgoritme brukt (MD5/SHA-1)");
                 }
                 if (trimmed.contains("new Random()")) {
-                    report.addIssue("Sikkerhet: Bruk SecureRandom i stedet for Random for sensitive operasjoner");
+                    report.addIssue("Sikkerhet: Bruk SecureRandom i stedet for Random");
                 }
 
-                // Sikkerhetssjekk C: Enkel SQL-injeksjonsdeteksjon i strenger
+                // 7. Sikkerhet: SQL-injeksjon via strengsammensetning
                 if (trimmed.toLowerCase().contains("select ") || trimmed.toLowerCase().contains("where ")) {
                     insideSqlQuery = true;
                 }
@@ -136,7 +159,7 @@ public class CodeAnalyzer {
 
     /**
      * Lagrer resultatene til en JSON-fil. 
-     * Bruker /app/quality_report.json for Docker-kompatibilitet.
+     * Prøver først Docker-mappe, deretter lokal rotmappe.
      */
     public void saveReport() {
         StringBuilder json = new StringBuilder("{\n  \"files\": [\n");
@@ -151,44 +174,55 @@ public class CodeAnalyzer {
         }
         json.append("  ]\n}");
 
-        // Vi prøver først den absolutte stien for Docker, ellers lokal mappe
-        Path reportPath = Paths.get("/app/quality_report.json");
-        
-        try {
-            Files.write(reportPath, json.toString().getBytes());
-            System.out.println("[ANALYZER] Rapport generert: " + reportPath.toAbsolutePath());
-        } catch (IOException e) {
-            // Fallback for lokal testing utenfor Docker
+        // Lagrer både til Docker-sti og lokal fallback
+        String[] targets = {"/app/quality_report.json", "quality_report.json"};
+        boolean saved = false;
+
+        for (String target : targets) {
             try {
-                Files.write(Paths.get("quality_report.json"), json.toString().getBytes());
-                System.out.println("[ANALYZER] Lokal rapport generert (fallback): quality_report.json");
-            } catch (IOException ex) {
-                System.err.println("[FEIL] Kunne ikke lagre rapport: " + ex.getMessage());
+                Files.write(Paths.get(target), json.toString().getBytes());
+                System.out.println("[ANALYZER] Rapport lagret: " + Paths.get(target).toAbsolutePath());
+                saved = true;
+                break; 
+            } catch (IOException e) {
+                // Fortsett til neste mål hvis dette feiler
             }
+        }
+
+        if (!saved) {
+            System.err.println("[FEIL] Kunne ikke lagre rapporten noen steder.");
         }
     }
 
     /**
-     * Hjelpeklasse for å holde på analysedata for den enkelte filen.
+     * Hjelpeklasse for å lagre analysedata for hver enkelt fil.
      */
     private static class FileReport {
         String fileName;
         int lines = 0;
         int javadoc = 0;
         int todos = 0;
-        int complexity = 1; // Starter på 1 (hovedstien i koden)
+        int complexity = 1; 
         List<String> issues = new ArrayList<>();
 
         FileReport(String fileName) {
             this.fileName = fileName;
         }
 
+        /**
+         * Legger til et funn/problem i listen hvis det ikke allerede eksisterer.
+         * @param issue Beskrivelse av problemet.
+         */
         void addIssue(String issue) {
             if (!issues.contains(issue)) {
                 issues.add(issue);
             }
         }
 
+        /**
+         * Formaterer listen over funn til et JSON-array format.
+         * @return JSON-string med issues.
+         */
         String getIssuesJson() {
             return issues.stream()
                     .map(s -> "\"" + s + "\"")

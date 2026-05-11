@@ -8,8 +8,9 @@
  * 6. Interaktive kontroller (Søk/Filter)
  * 7. Datatabeller
  * 8. Sidebunn (Footer)
+ * 9. Tillegg: Kritiske funn, Målere og Utskrift
  * * @author Kefmat
- * @version 1.1.0
+ * @version 1.2.0
  */
 
 /* ==========================================================================
@@ -24,24 +25,19 @@ body {
     align-items: center;
     min-height: 100vh;
     margin: 0;
-    padding: 20px; /* Sikrer scroll-rom på små skjermer */
+    padding: 20px;
 }
 
 /* ==========================================================================
    2. Hovedbeholdere (Containers)
    ========================================================================== */
-
-/**
- * Hovedkortet for dashboardet.
- * Inneholder alle statistikker, trendgrafer og den interaktive filtabellen.
- */
 .audit-card {
     background-color: #1e293b;
     padding: 3rem;
     border-radius: 16px;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
     width: 100%;
-    max-width: 800px; /* Tilpasset bredde for å gi god plass til tabell og graf */
+    max-width: 850px;
     text-align: center;
     border: 1px solid #334155;
     box-sizing: border-box;
@@ -62,10 +58,6 @@ h1 {
     margin-bottom: 30px;
 }
 
-/**
- * Rund sirkel som viser den overordnede kodekvalitetskarakteren.
- * Har en glidende forstørrelseseffekt (zoom) når man holder musepekeren over.
- */
 .grade-circle {
     width: 110px;
     height: 110px;
@@ -84,7 +76,6 @@ h1 {
     transform: scale(1.05);
 }
 
-/* Statusfarger som reflekterer prosjektets tilstand basert på grenseverdier */
 .success { color: #10b981; border-color: #10b981; }
 .warning { color: #f59e0b; border-color: #f59e0b; }
 .danger  { color: #ef4444; border-color: #ef4444; }
@@ -93,11 +84,6 @@ h1 {
 /* ==========================================================================
    4. Statistikk-rutenett (Grid)
    ========================================================================== */
-
-/**
- * Adaptivt rutenett som viser overordnede nøkkeltall for repositoriet.
- * Tilpasser seg automatisk færre kolonner på mindre skjermer.
- */
 .stat-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -137,11 +123,6 @@ h1 {
 /* ==========================================================================
    5. Graf-komponenter (Trend)
    ========================================================================== */
-
-/**
- * Seksjonsinnpakning for Chart.js-grafen.
- * Sikrer en stabil høyde og forhindrer at layouten forskyver seg under rendering.
- */
 .trend-section {
     margin-top: 30px;
     margin-bottom: 30px;
@@ -176,16 +157,6 @@ h1 {
     padding-top: 30px;
 }
 
-.file-details h2 {
-    font-size: 1.1rem;
-    margin-bottom: 20px;
-    color: #cbd5e1;
-}
-
-/**
- * Layout-rad for søkefeltet og nedtrekksmenyen.
- * Bruker flexbox for å bryte pent over flere linjer på smale skjermer.
- */
 .table-controls {
     display: flex;
     gap: 15px;
@@ -202,42 +173,30 @@ h1 {
     color: #f1f5f9;
     font-size: 0.85rem;
     outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
     box-sizing: border-box;
 }
 
-.table-controls input {
-    flex: 1;
-    min-width: 200px;
-}
-
-.table-controls select {
-    min-width: 180px;
-    cursor: pointer;
-}
-
-.table-controls input:focus,
-.table-controls select:focus {
-    border-color: #475569;
-    box-shadow: 0 0 0 2px rgba(71, 85, 105, 0.2);
-}
-
-.table-controls select option {
-    background-color: #0f172a;
+.export-btn {
+    padding: 10px 15px;
+    background-color: #334155;
+    border: none;
+    border-radius: 8px;
     color: #f1f5f9;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background 0.2s;
+}
+
+.export-btn:hover {
+    background-color: #475569;
 }
 
 
 /* ==========================================================================
    7. Datatabeller
    ========================================================================== */
-
-/**
- * Tabellinnpakning som muliggjør horisontal rulling.
- * Forhindrer at brede tabeller skyver hovedkortet ut av skjermkanten på mobil.
- */
 .table-wrapper {
-    overflow-x: auto; /* Sikrer at tabellen kan svaipes på mobil */
+    overflow-x: auto;
     border-radius: 8px;
 }
 
@@ -251,7 +210,6 @@ th {
     color: #94a3b8;
     text-transform: uppercase;
     font-size: 0.7rem;
-    letter-spacing: 0.05em;
     padding: 12px 10px;
     border-bottom: 2px solid #334155;
     text-align: left;
@@ -275,4 +233,60 @@ tr:hover td {
     font-size: 0.75rem;
     color: #64748b;
     margin-top: 40px;
+}
+
+/* ==========================================================================
+   9. Tillegg: Kritiske funn, Målere og Utskrift
+   ========================================================================== */
+.critical-alerts { 
+    margin-bottom: 30px; 
+    text-align: left; 
+}
+
+.alert-box {
+    background: rgba(239, 68, 68, 0.1); 
+    border-left: 4px solid #ef4444;
+    padding: 15px; 
+    display: flex; 
+    align-items: center; 
+    gap: 15px; 
+    border-radius: 4px;
+}
+
+.critical-grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+    gap: 10px; 
+    margin-top: 15px; 
+}
+
+.critical-item { 
+    background: #0f172a; 
+    padding: 10px; 
+    border-radius: 8px; 
+    border: 1px solid #334155; 
+    font-size: 0.8rem; 
+}
+
+/* Javadoc Måler i Tabell */
+.doc-bar-bg { 
+    background: #0f172a; 
+    width: 50px; 
+    height: 6px; 
+    border-radius: 3px; 
+    display: inline-block; 
+    margin-right: 8px; 
+    vertical-align: middle; 
+}
+
+.doc-bar-fill { 
+    background: #10b981; 
+    height: 100%; 
+    border-radius: 3px; 
+}
+
+@media print {
+    body { background: white; color: black; padding: 0; }
+    .audit-card { box-shadow: none; border: 1px solid #eee; width: 100%; max-width: none; }
+    .table-controls, .export-btn, .chart-container { display: none; }
 }

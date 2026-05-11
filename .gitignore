@@ -5,11 +5,19 @@
 # Node.js
 node_modules/
 npm-debug.log
+package-lock.json
 
-# Prosjektspesifikt
+# Sentinel Spesifikt
 quality_report.json
 app/output/*
 !app/output/.gitkeep
+
+# Historikk og Logger
+app/history/*.json
+
+# IDE - Visual Studio Code
+.vscode/
+*.code-workspace
 
 # OS filer
 .DS_Store
